@@ -1,0 +1,177 @@
+昨晚看了进程间通信Binder的用法
+AIDL的通信方式跨进程的话会调用proxy里面的方法 当没有跨进程就直接调用stub返回对应的binder
+1、首先申明调用的方法
+2、然后执行stub（为一个Binder），进入stub方法，回调asInterface,如果不是跨进程的则直接返回对应的Binder，如果是跨进程的则进入到proxy执行相应的方法
+然后当前线程就会挂起，stub进入到Binder池里面回调ontransact,进入到对应的case里面，当执行完了再通知外面的线程继续往下走
+因为是异步通信所以要注意同步的问题
+
+public interface IFmCtrol extends android.os.IInterface
+{
+	/** Local-side IPC implementation stub class. */
+	public static abstract class Stub extends android.os.Binder implements cld.fm.service.aidl.IFmCtrol
+	{
+		private static final java.lang.String DESCRIPTOR = "cld.fm.service.aidl.IFmCtrol";
+		/** Construct the stub at attach it to the interface. */
+		public Stub()
+		{
+			this.attachInterface(this, DESCRIPTOR);
+		}
+		/**
+		 * Cast an IBinder object into an cld.fm.service.aidl.IFmCtrol interface,
+		 * generating a proxy if needed.
+		 */
+		public static cld.fm.service.aidl.IFmCtrol asInterface(android.os.IBinder obj)
+		{
+			if ((obj==null)) {
+			  return null;
+		  }
+			android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+			if (((iin!=null)&&(iin instanceof cld.fm.service.aidl.IFmCtrol))) {
+			  return ((cld.fm.service.aidl.IFmCtrol)iin);
+			}
+			return new cld.fm.service.aidl.IFmCtrol.Stub.Proxy(obj);
+		}
+		@Override 
+		public android.os.IBinder asBinder()
+		{
+			return this;
+		}
+		@Override 
+		public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws android.os.RemoteException
+		{
+			switch (code)
+			{
+			case INTERFACE_TRANSACTION:
+			{
+				reply.writeString(DESCRIPTOR);
+				return true;
+			}
+			case TRANSACTION_serchTracks:
+			{
+				data.enforceInterface(DESCRIPTOR);
+				java.lang.String _arg0;
+				_arg0 = data.readString();
+				cld.fm.service.aidl.IFmCtrolCallBack _arg1;
+				_arg1 = cld.fm.service.aidl.IFmCtrolCallBack.Stub.asInterface(data.readStrongBinder());
+				boolean _result = this.serchTracks(_arg0, _arg1);
+				reply.writeNoException();
+				reply.writeInt(((_result)?(1):(0)));
+				return true;
+			}
+			case TRANSACTION_playTrack:
+			{
+				data.enforceInterface(DESCRIPTOR);
+				cld.fm.service.aidl.RemoteTrack _arg0;
+				if ((0!=data.readInt())) {
+				_arg0 = cld.fm.service.aidl.RemoteTrack.CREATOR.createFromParcel(data);
+				}
+				else {
+				_arg0 = null;
+				}
+				boolean _result = this.playTrack(_arg0);
+				reply.writeNoException();
+				reply.writeInt(((_result)?(1):(0)));
+				return true;
+			}
+			case TRANSACTION_playCtrol:
+			{
+				data.enforceInterface(DESCRIPTOR);
+				int _arg0;
+				_arg0 = data.readInt();
+				boolean _result = this.playCtrol(_arg0);
+				reply.writeNoException();
+				reply.writeInt(((_result)?(1):(0)));
+				return true;
+			}
+			}
+			return super.onTransact(code, data, reply, flags);
+		}
+		private static class Proxy implements cld.fm.service.aidl.IFmCtrol
+		{
+			private android.os.IBinder mRemote;
+			Proxy(android.os.IBinder remote)
+			{
+				mRemote = remote;
+			}
+			@Override 
+			public android.os.IBinder asBinder()
+			{
+				return mRemote;
+			}
+			public java.lang.String getInterfaceDescriptor()
+			{
+				return DESCRIPTOR;
+			}
+			@Override 
+			public boolean serchTracks(java.lang.String searchKey, cld.fm.service.aidl.IFmCtrolCallBack callback) throws android.os.RemoteException
+			{
+				android.os.Parcel _data = android.os.Parcel.obtain();
+				android.os.Parcel _reply = android.os.Parcel.obtain();
+				boolean _result;
+				try {
+				_data.writeInterfaceToken(DESCRIPTOR);
+				_data.writeString(searchKey);
+				_data.writeStrongBinder((((callback!=null))?(callback.asBinder()):(null)));
+				mRemote.transact(Stub.TRANSACTION_serchTracks, _data, _reply, 0);
+				_reply.readException();
+				_result = (0!=_reply.readInt());
+				}
+				finally {
+				_reply.recycle();
+				_data.recycle();
+				}
+				return _result;
+			}
+			@Override 
+			public boolean playTrack(cld.fm.service.aidl.RemoteTrack track) throws android.os.RemoteException
+			{
+				android.os.Parcel _data = android.os.Parcel.obtain();
+				android.os.Parcel _reply = android.os.Parcel.obtain();
+				boolean _result;
+				try {
+					_data.writeInterfaceToken(DESCRIPTOR);
+					if ((track!=null)) {
+					_data.writeInt(1);
+					track.writeToParcel(_data, 0);
+					}
+					else {
+					_data.writeInt(0);
+					}
+					mRemote.transact(Stub.TRANSACTION_playTrack, _data, _reply, 0);
+					_reply.readException();
+					_result = (0!=_reply.readInt());
+				}
+				finally {
+					_reply.recycle();
+					_data.recycle();
+				}
+				return _result;
+			}
+			@Override 
+			public boolean playCtrol(int oprate) throws android.os.RemoteException
+			{
+				android.os.Parcel _data = android.os.Parcel.obtain();
+				android.os.Parcel _reply = android.os.Parcel.obtain();
+				boolean _result;
+				try {
+					_data.writeInterfaceToken(DESCRIPTOR);
+					_data.writeInt(oprate);
+					mRemote.transact(Stub.TRANSACTION_playCtrol, _data, _reply, 0);
+					_reply.readException();
+					_result = (0!=_reply.readInt());
+				}
+				finally {
+					_reply.recycle();
+					_data.recycle();
+				}
+				return _result;
+			}
+		}
+		static final int TRANSACTION_serchTracks = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+		static final int TRANSACTION_playTrack = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+		static final int TRANSACTION_playCtrol = (android.os.IBinder.FIRST_CALL_TRANSACTION + 2);
+	}
+public boolean serchTracks(java.lang.String searchKey, cld.fm.service.aidl.IFmCtrolCallBack callback) throws android.os.RemoteException;
+public boolean playTrack(cld.fm.service.aidl.RemoteTrack track) throws android.os.RemoteException;
+public boolean playCtrol(int oprate) throws android.os.RemoteException;
+}
