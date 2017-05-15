@@ -1,0 +1,7 @@
+RemoteView同样可以向AIDL实现那样用View去访问远程进程，但是原理却完全不一样。AIDL是通过另一端实现.Stub内部类，在其中调用远程View数据来实现。
+然而在RemoteView中，使用的策略是将实现了Parcelable接口的内部类Action传送到远程进程。
+
+private abstract static class Action implements Parcelable
+
+我们将操作的对象操作封装到Action中，接着在远程端依次操作Action，最后再一次跨进程回到RemoteView中让RemoteView去修改View。这么做的高明之处在于，省去了每一种View定义一个Binder接口,提高了程序的性能。
+
