@@ -1,0 +1,14 @@
+首先在自己的github上面新建一个Repository并创建一个README文件
+
+
+1、 建立本地的git仓库
+进入对应的目录下面执行
+命令：git init
+2、把需要上传的文件拷贝到这个目录下
+3、执行命令git add -A(git add .)把当前文件全部加到本地仓库里面
+4、将本地仓库关联到github上面
+命令：git remote add origin https://github.com/RileyZhang/PathTest
+5、先把github上面的文件pull一下
+命令：git pull origin master
+6、将本地仓库的文件加到github上面
+命令：git push origin master
