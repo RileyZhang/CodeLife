@@ -6,3 +6,6 @@ https://www.diycode.cc/wiki/androidinterview
 
 Material Design学习资料
 https://github.com/Luosunce/material-design-data
+
+android 原理分析资料
+http://gityuan.com/
