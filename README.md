@@ -9,3 +9,8 @@ https://github.com/Luosunce/material-design-data
 
 android 原理分析资料
 http://gityuan.com/
+
+Android学习路线
+http://blog.csdn.net/singwhatiwanna/article/details/49230997
+http://blog.csdn.net/singwhatiwanna/article/details/46810527
+http://blog.csdn.net/singwhatiwanna/article/details/49560409/
