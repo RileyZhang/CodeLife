@@ -1,0 +1,39 @@
+1、Android应用setContentView与LayoutInflater加载解析机制源码分析：
+http://blog.csdn.net/yanbober/article/details/45970721
+
+2、Android应用Activity、Dialog、PopWindow、Toast窗口添加机制及源码分析 
+http://blog.csdn.net/yanbober/article/details/46361191
+
+2、Android应用Context详解及源码解析 
+http://blog.csdn.net/yanbober/article/details/45967639
+
+3、Android异步消息处理机制详解及源码分析
+http://blog.csdn.net/yanbober/article/details/45936145
+
+4、Android应用AsyncTask处理机制详解及源码分析 
+http://blog.csdn.net/yanbober/article/details/46117397
+
+5、Android应用层View绘制流程与源码分析
+http://blog.csdn.net/yanbober/article/details/46128379
+
+6、Android触摸屏事件派发机制详解与源码分析一(View篇) 
+http://blog.csdn.net/yanbober/article/details/45887547
+
+7、Android触摸屏事件派发机制详解与源码分析二(ViewGroup篇) 
+http://blog.csdn.net/yanbober/article/details/45912661
+
+8、Android触摸屏事件派发机制详解与源码分析三(Activity篇) 
+http://blog.csdn.net/yanbober/article/details/45932123
+
+9、Android应用开发之所有动画使用详解
+http://blog.csdn.net/yanbober/article/details/46481171
+
+10、Android应用坐标系统全面详解 
+http://blog.csdn.net/yanbober/article/details/50419117
+
+11、 Android 应用层开发 Drawable 的一些叨叨絮 
+http://blog.csdn.net/yanbober/article/details/56844869
+
+12、内存优化
+ Android最佳性能实践(四)——布局优化技巧 
+ http://blog.csdn.net/guolin_blog/article/details/43376527
