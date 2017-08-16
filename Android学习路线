@@ -1,6 +1,9 @@
 1、Android应用setContentView与LayoutInflater加载解析机制源码分析：
 http://blog.csdn.net/yanbober/article/details/45970721
 
+源码解析StartActivity的过程 
+http://blog.csdn.net/linghu_java/article/details/42931577
+
 2、Android应用Activity、Dialog、PopWindow、Toast窗口添加机制及源码分析 
 http://blog.csdn.net/yanbober/article/details/46361191
 
