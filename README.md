@@ -16,3 +16,6 @@ http://blog.csdn.net/singwhatiwanna/article/details/49230997
 http://blog.csdn.net/singwhatiwanna/article/details/46810527
 
 http://blog.csdn.net/singwhatiwanna/article/details/49560409/
+
+内存优化：http://blog.tingyun.com/web/article/detail/155#rd  
+http://www.jianshu.com/p/a0e242d57360
