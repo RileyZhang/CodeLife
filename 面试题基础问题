@@ -1,0 +1,4 @@
+1、activity生命周期
+ onCreate()->onStart()->onResume()->onPause()->onStop()->onDestory()
+
+2、service生命周期
