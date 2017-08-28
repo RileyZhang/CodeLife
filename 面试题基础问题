@@ -2,3 +2,5 @@
  onCreate()->onStart()->onResume()->onPause()->onStop()->onDestory()
 
 2、service生命周期
+ startService: onCreate()->onStartCommand()->onDestory()
+ bindService: onCreate()->onBind()->onUbind->onDestory
