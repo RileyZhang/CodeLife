@@ -1,0 +1,49 @@
+Glide.with(this).load(url).into(imageView)
+into()有三个方法into(ImageView view)、into(int width, int height)、Y into(Y target) 在GenericRequestBuilder类里面，其实很多的扩展功能都
+在GenericRequestBuilder类里面
+跟回调相关的是into（Y target） 传入我们自定义的Target，并复写onResourceReady（）方法，自定义target有两种一种是继承simpleTarget一种是继承viewTarget
+如下：
+
+SimpleTarget<GlideDrawable> simpleTarget = new SimpleTarget<GlideDrawable>() {
+    @Override
+    public void onResourceReady(GlideDrawable resource, GlideAnimation glideAnimation) {
+        //resource包含图片资源，可以把GlideDrawable 改成Bitmap
+        imageView.setImageDrawable(resource);
+    }
+};
+
+viewTarget = new ViewTarget<MyLayout, GlideDrawable>(this) {
+            @Override
+            public void onResourceReady(GlideDrawable resource, GlideAnimation glideAnimation) {
+                MyLayout myLayout = getView();
+                myLayout.setImageAsBackground(resource);
+            }
+        };
+可以在onResourceReady里面实现自己的操作，比如让imageView、把获取的图片设置为背景等等很多扩展
+
+
+preload（）预加载功能，即不用在需要显示的时候去获取图片，我们可以先预加载图片等到要用的时候直接从缓存中获取图片就好
+preload（）也是GenericRequestBuilder类中的方法 有两个方法preload()、preload(int width, int height)（指定缓存图片的长宽）
+需要注意的是，我们如果使用了preload()方法，最好要将diskCacheStrategy的缓存策略指定成DiskCacheStrategy.SOURCE 
+其实preload（）实现也是实现了一个simpleTarget 只是不把图片显示出来，具体实现如下：
+public final class PreloadTarget<Z> extends SimpleTarget<Z> {
+
+    public static <Z> PreloadTarget<Z> obtain(int width, int height) {
+        return new PreloadTarget<Z>(width, height);
+    }
+
+    private PreloadTarget(int width, int height) {
+        super(width, height);
+    }
+
+    @Override
+    public void onResourceReady(Z resource, GlideAnimation<? super Z> glideAnimation) {
+        Glide.clear(this);
+    }
+}
+Glide.clear()并不是清空缓存的意思，而是表示加载已完成，释放资源的意思
+
+downloadOnly()仅下载 DrawableTypeRequest类中包含有两个方法 downloadOnly(int width, int height)、downloadOnly(Y target) 
+其中downloadOnly(int width, int height)是用于在子线程中下载图片的，而downloadOnly(Y target)是用于在主线程中下载图片的。
+
+
