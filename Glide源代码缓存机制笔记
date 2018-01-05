@@ -1,0 +1,95 @@
+Glide 内存缓存实现方式为：正在使用的用弱引用的hashmap方式保存起来，非正在使用的用LruCahce（least Recently Use）保存到内存当中
+读取的过程实现方式为：先从LruCache里面去读取，如果读取不到的话就再从ActiveResource（弱引用HashMap）里面读取，如果ActiveResource里面获取不到
+则从网络上获取 需要注意一点的是如果从LruCache里面读取到了会把LruCahce里面的图片删掉并保存到ActiveResource里面
+代码如下：
+public class Engine implements EngineJobListener,
+        MemoryCache.ResourceRemovedListener,
+        EngineResource.ResourceListener {
+    ...    
+
+    public <T, Z, R> LoadStatus load(Key signature, int width, int height, DataFetcher<T> fetcher,
+            DataLoadProvider<T, Z> loadProvider, Transformation<Z> transformation, ResourceTranscoder<Z, R> transcoder,
+            Priority priority, boolean isMemoryCacheable, DiskCacheStrategy diskCacheStrategy, ResourceCallback cb) {
+        Util.assertMainThread();
+        long startTime = LogTime.getLogTime();
+
+        final String id = fetcher.getId();
+        EngineKey key = keyFactory.buildKey(id, signature, width, height, loadProvider.getCacheDecoder(),
+                loadProvider.getSourceDecoder(), transformation, loadProvider.getEncoder(),
+                transcoder, loadProvider.getSourceEncoder());
+
+        EngineResource<?> cached = loadFromCache(key, isMemoryCacheable);//从LruCache里面获取图片
+        if (cached != null) {
+            cb.onResourceReady(cached);
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                logWithTimeAndKey("Loaded resource from cache", startTime, key);
+            }
+            return null;
+        }
+
+        EngineResource<?> active = loadFromActiveResources(key, isMemoryCacheable);//从Active里面获取图片
+        if (active != null) {
+            cb.onResourceReady(active);
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                logWithTimeAndKey("Loaded resource from active resources", startTime, key);
+            }
+            return null;
+        }
+
+        EngineJob current = jobs.get(key);
+        if (current != null) {
+            current.addCallback(cb);
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                logWithTimeAndKey("Added to existing load", startTime, key);
+            }
+            return new LoadStatus(cb, current);
+        }
+
+        EngineJob engineJob = engineJobFactory.build(key, isMemoryCacheable);
+        DecodeJob<T, Z, R> decodeJob = new DecodeJob<T, Z, R>(key, width, height, fetcher, loadProvider, transformation,
+                transcoder, diskCacheProvider, diskCacheStrategy, priority);
+        EngineRunnable runnable = new EngineRunnable(engineJob, decodeJob, priority);
+        jobs.put(key, engineJob);
+        engineJob.addCallback(cb);
+        engineJob.start(runnable);
+
+        if (Log.isLoggable(TAG, Log.VERBOSE)) {
+            logWithTimeAndKey("Started new load", startTime, key);
+        }
+        return new LoadStatus(cb, engineJob);
+    }
+
+    ...
+}
+
+存储的过程如下：从服务器上面拿到图片数据之后立马保存到ActiveResource里面，然后在存贮图片类里面的变量acquire++，等到图片使用完之后就release掉
+然后acquire--，在release过程中判断acquire是否等于0 等于0的话（说明这个图片没有正在使用）就把这个图片的数据保存到LruCache里面
+具体过程如下：EngineResource就是保存的图片类
+class EngineResource<Z> implements Resource<Z> {
+
+    private int acquired;
+    ...
+
+    void acquire() {
+        if (isRecycled) {
+            throw new IllegalStateException("Cannot acquire a recycled resource");
+        }
+        if (!Looper.getMainLooper().equals(Looper.myLooper())) {
+            throw new IllegalThreadStateException("Must call acquire on the main thread");
+        }
+        ++acquired;
+    }
+
+    void release() {
+        if (acquired <= 0) {
+            throw new IllegalStateException("Cannot release a recycled or not yet acquired resource");
+        }
+        if (!Looper.getMainLooper().equals(Looper.myLooper())) {
+            throw new IllegalThreadStateException("Must call release on the main thread");
+        }
+        if (--acquired == 0) {
+            listener.onResourceReleased(key, this);
+        }
+    }
+}
+
