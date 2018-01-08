@@ -1,2 +1,74 @@
+图片变换说的是我们可以给图片设置任意的变换，比如设置圆角、模糊之类的。
+Glide图形变换的用法为 
+Glide.with(this)
+     .load(url)
+     .transform(...)
+     .into(imageView);
 
+transform()里面传入 变换的类型
+
+目前有两种默认的图形变换 centerCrop() 和 fitCenter()两种，
+Glide.with(this)
+     .load(url)
+     .centerCrop()
+     .into(imageView);
+
+Glide.with(this)
+     .load(url)
+     .fitCenter()
+     .into(imageView);
+
+上述两种转换做成API 内部的实现是 transform(glide.getDrawableCenterCrop())、transform(glide.getDrawableFitCenter())
+除了上述两种变化之外 我们还可以自定义变换，继承BitmapTransformation 并实现getId()（每个转换方式的唯一id）和transform()（转换的具体实现）方法
+圆形图片转换实例如下：
+
+public class CircleCrop extends BitmapTransformation {
+
+    public CircleCrop(Context context) {
+        super(context);
+    }
+
+    public CircleCrop(BitmapPool bitmapPool) {
+        super(bitmapPool);
+    }
+
+    @Override
+    public String getId() {
+        return "com.example.glidetest.CircleCrop";
+    }
+
+    @Override
+    protected Bitmap transform(BitmapPool pool, Bitmap toTransform, int outWidth, int outHeight) {
+        int diameter = Math.min(toTransform.getWidth(), toTransform.getHeight());
+
+        final Bitmap toReuse = pool.get(outWidth, outHeight, Bitmap.Config.ARGB_8888);
+        final Bitmap result;
+        if (toReuse != null) {
+            result = toReuse;
+        } else {
+            result = Bitmap.createBitmap(diameter, diameter, Bitmap.Config.ARGB_8888);
+        }
+
+        int dx = (toTransform.getWidth() - diameter) / 2;
+        int dy = (toTransform.getHeight() - diameter) / 2;
+        Canvas canvas = new Canvas(result);
+        Paint paint = new Paint();
+        BitmapShader shader = new BitmapShader(toTransform, BitmapShader.TileMode.CLAMP, 
+                                            BitmapShader.TileMode.CLAMP);
+        if (dx != 0 || dy != 0) {
+            Matrix matrix = new Matrix();
+            matrix.setTranslate(-dx, -dy);
+            shader.setLocalMatrix(matrix);
+        }
+        paint.setShader(shader);
+        paint.setAntiAlias(true);
+        float radius = diameter / 2f;
+        canvas.drawCircle(radius, radius, radius, paint);
+
+        if (toReuse != null && !pool.put(toReuse)) {
+            toReuse.recycle();
+        }
+        return result;
+    }
+}
 
