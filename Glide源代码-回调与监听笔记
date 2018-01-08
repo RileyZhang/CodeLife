@@ -45,5 +45,74 @@ Glide.clear()并不是清空缓存的意思，而是表示加载已完成，释�
 
 downloadOnly()仅下载 DrawableTypeRequest类中包含有两个方法 downloadOnly(int width, int height)、downloadOnly(Y target) 
 其中downloadOnly(int width, int height)是用于在子线程中下载图片的，而downloadOnly(Y target)是用于在主线程中下载图片的。
+downloadOnly()和preload()的区别在于downloadOnly()我们可以获取到图片路径，而preload()只是下载到缓存
+downloadOnly()返回的是FutureTarget<File> target类型，target.getFile()就可以得到下载到的文件了
+基本用法如下：
+public void downloadImage(View view) {
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                String url = "http://cn.bing.com/az/hprichbg/rb/TOAD_ZH-CN7336795473_1920x1080.jpg";
+                final Context context = getApplicationContext();
+                FutureTarget<File> target = Glide.with(context)
+                                                 .load(url)
+                                                 .downloadOnly(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL);
+                final File imageFile = target.get();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(context, imageFile.getPath(), Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }).start();
+}
 
 
+listener() 是结合into()方法使用的，当下载图片结束或者出现异常的时候就会回调我们传进去的RequestListener的实例 用法如下：
+public void loadImage(View view) {
+    String url = "http://cn.bing.com/az/hprichbg/rb/TOAD_ZH-CN7336795473_1920x1080.jpg";
+    Glide.with(this)
+            .load(url)
+            .listener(new RequestListener<String, GlideDrawable>() {
+                @Override
+                public boolean onException(Exception e, String model, Target<GlideDrawable> target,
+                    boolean isFirstResource) {
+                    return false;
+                }
+
+                @Override
+                public boolean onResourceReady(GlideDrawable resource, String model,
+                    Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+                    return false;
+                }
+            })
+            .into(imageView);
+}
+
+
+请求数据出现异常回调onException()方法 成功之后回调onResourceReady()，这两个方法return false之后程序会继续回调target的onResourceReady()
+底层代码实现如下：
+public final class GenericRequest<A, T, Z, R> implements Request, SizeReadyCallback,
+        ResourceCallback {
+
+    private RequestListener<? super A, R> requestListener;
+    ...
+
+    private void onResourceReady(Resource<?> resource, R result) {
+        boolean isFirstResource = isFirstReadyResource();
+        status = Status.COMPLETE;
+        this.resource = resource;
+        if (requestListener == null || !requestListener.onResourceReady(result, model, target,
+                loadedFromMemoryCache, isFirstResource)) {
+            GlideAnimation<R> animation = animationFactory.build(loadedFromMemoryCache, isFirstResource);
+            target.onResourceReady(result, animation);
+        }
+        notifyLoadSuccess();
+    }
+    ...
+}
