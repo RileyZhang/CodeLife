@@ -1,7 +1,11 @@
 
-Glide 内存缓存实现方式为：正在使用的用弱引用的hashmap方式保存起来，非正在使用的用LruCahce（least Recently Use）保存到内存当中
-读取的过程实现方式为：先从LruCache里面去读取，如果读取不到的话就再从ActiveResource（弱引用HashMap）里面读取，如果ActiveResource里面获取不到
-则从网络上获取 需要注意一点的是如果从LruCache里面读取到了会把LruCahce里面的图片删掉并保存到ActiveResource里面
+Glide 内存缓存实现方式为：正在使用的用ActiveResource（弱引用hashmap的方式）保存起来，非正在使用的用LruCahce（least Recently Use）保存到内存当中
+Glide内存缓存和本地缓存是可以共存的是两个独立的存储的方式，可以单独内存缓存也可以单独磁盘缓存，也可以内存和磁盘一起缓存，读取的过程是先从LruCache读
+读取不到的话在从ActiveResource里面去读，最后在从磁盘文件里面去读，磁盘中没有的话再从网络上面去读取
+
+
+内存缓存读取的过程实现方式为：先从LruCache里面去读取，如果读取不到的话就再从ActiveResource（弱引用HashMap）里面读取，如果ActiveResource里面获取不到
+则从磁盘中读取如果磁盘里面读取不到则从网络上获取 需要注意一点的是如果从LruCache里面读取到了会把LruCahce里面的图片删掉并保存到ActiveResource里面
 代码如下：
 public class Engine implements EngineJobListener,
         MemoryCache.ResourceRemovedListener,
