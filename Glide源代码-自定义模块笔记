@@ -1,0 +1,172 @@
+
+自定义模块可以将更改Glide配置，替换Glide组件等操作独立出来，使得我们可以将各种操作独立起来但是又不影响图片下载的的流程，耦合比较低
+
+基本实现步骤如下：1、先定义一个类继承自GlideModule 2、在AndroidManifest.xml 注册这个GlideModule类
+1、public class MyGlideModule implements GlideModule {
+    @Override
+    public void applyOptions(Context context, GlideBuilder builder) {
+    }
+
+    @Override
+    public void registerComponents(Context context, Glide glide) {
+    }
+}
+
+applyOptions常用的配置项有下面几种：
+    setMemoryCache()
+    用于配置Glide的内存缓存策略，默认配置是LruResourceCache。
+
+    setBitmapPool()
+    用于配置Glide的Bitmap缓存池，默认配置是LruBitmapPool。
+
+    setDiskCache()
+    用于配置Glide的硬盘缓存策略，默认配置是InternalCacheDiskCacheFactory。
+
+    setDiskCacheService()
+    用于配置Glide读取缓存中图片的异步执行器，默认配置是FifoPriorityThreadPoolExecutor，也就是先入先出原则。
+
+    setResizeService()
+    用于配置Glide读取非缓存中图片的异步执行器，默认配置也是FifoPriorityThreadPoolExecutor。
+
+    setDecodeFormat()
+    用于配置Glide加载图片的解码模式，默认配置是RGB_565。
+
+registerComponents 是用于替换Glide的组件 比如说目前使用的是原始的urlConnect 网络请求，我们可以用okhttp去替换掉这个组件
+
+2、<manifest>
+
+    ...
+
+    <application>
+
+        <meta-data
+            android:name="com.example.glidetest.MyGlideModule"
+            android:value="GlideModule" />
+
+        ...
+
+    </application>
+</manifest>
+android:value必须指定成GlideModule，这个是固定值
+
+
+下面实现一个实例来说明：
+public class MyGlideModule implements GlideModule {
+
+    public static final int DISK_CACHE_SIZE = 500 * 1024 * 1024;
+
+    @Override
+    public void applyOptions(Context context, GlideBuilder builder) {
+        builder.setDiskCache(new ExternalCacheDiskCacheFactory(context, DISK_CACHE_SIZE));//把图片存储改为外部存储
+        builder.setDecodeFormat(DecodeFormat.PREFER_ARGB_8888);//改变图片存储为8888格式的
+    }
+
+    @Override
+    public void registerComponents(Context context, Glide glide) {
+        //使用okhttp来替代原来的网络请求
+        glide.register(GlideUrl.class, InputStream.class, new OkHttpGlideUrlLoader.Factory());
+    }
+}
+
+public class OkHttpGlideUrlLoader implements ModelLoader<GlideUrl, InputStream> {
+
+    private OkHttpClient okHttpClient;
+
+    public static class Factory implements ModelLoaderFactory<GlideUrl, InputStream> {
+
+        private OkHttpClient client;
+
+        public Factory() {
+        }
+
+        public Factory(OkHttpClient client) {
+            this.client = client;
+        }
+
+        private synchronized OkHttpClient getOkHttpClient() {
+            if (client == null) {
+                client = new OkHttpClient();
+            }
+            return client;
+        }
+
+        @Override
+        public ModelLoader<GlideUrl, InputStream> build(Context context, GenericLoaderFactory factories) {
+            return new OkHttpGlideUrlLoader(getOkHttpClient());
+        }
+
+        @Override
+        public void teardown() {
+        }
+    }
+
+    public OkHttpGlideUrlLoader(OkHttpClient client) {
+        this.okHttpClient = client;
+    }
+
+    @Override
+    public DataFetcher<InputStream> getResourceFetcher(GlideUrl model, int width, int height) {
+        return new OkHttpFetcher(okHttpClient, model);
+    }
+}
+
+public class OkHttpFetcher implements DataFetcher<InputStream> {
+
+    private final OkHttpClient client;
+    private final GlideUrl url;
+    private InputStream stream;
+    private ResponseBody responseBody;
+    private volatile boolean isCancelled;
+
+    public OkHttpFetcher(OkHttpClient client, GlideUrl url) {
+        this.client = client;
+        this.url = url;
+    }
+
+    @Override
+    public InputStream loadData(Priority priority) throws Exception {
+        Request.Builder requestBuilder = new Request.Builder()
+                .url(url.toStringUrl());
+        for (Map.Entry<String, String> headerEntry : url.getHeaders().entrySet()) {
+            String key = headerEntry.getKey();
+            requestBuilder.addHeader(key, headerEntry.getValue());
+        }
+        requestBuilder.addHeader("httplib", "OkHttp");
+        Request request = requestBuilder.build();
+        if (isCancelled) {
+            return null;
+        }
+        Response response = client.newCall(request).execute();
+        responseBody = response.body();
+        if (!response.isSuccessful() || responseBody == null) {
+            throw new IOException("Request failed with code: " + response.code());
+        }
+        stream = ContentLengthInputStream.obtain(responseBody.byteStream(),
+                responseBody.contentLength());
+        return stream;
+    }
+
+    @Override
+    public void cleanup() {
+        try {
+            if (stream != null) {
+                stream.close();
+            }
+            if (responseBody != null) {
+                responseBody.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getId() {
+        return url.getCacheKey();
+    }
+
+    @Override
+    public void cancel() {
+        isCancelled = true;
+    }
+}
